@@ -18,8 +18,10 @@ final class OAuth2Service {
         }
         set {
             tokenStorage.accessToken = newValue
-        } }
+        }
+    }
     
+    private init() {}
     
     func fetchAuthToken(
         _ code: String,

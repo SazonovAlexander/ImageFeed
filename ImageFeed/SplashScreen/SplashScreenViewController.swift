@@ -3,7 +3,7 @@ import UIKit
 
 final class SplashScreenViewController: UIViewController {
     
-    private let oAuth2Service: OAuth2Service = OAuth2Service()
+    private let oAuth2Service: OAuth2Service = OAuth2Service.shared
     private let authSegueIdentifier = "AuthSegueIdentifier"
     private let tokenStorage = OAuth2TokenStorage()
     
