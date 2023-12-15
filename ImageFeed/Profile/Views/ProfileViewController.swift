@@ -1,16 +1,19 @@
 import UIKit
+import Kingfisher
 
 
 final class ProfileViewController: UIViewController {
     
     //MARK: - Private properties
-    private var profileImageView: UIImageView = {
+    private lazy var profileImageView: UIImageView = {
         let imageView = UIImageView(image: UIImage.profile)
         imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.layer.cornerRadius = 35
+        imageView.clipsToBounds = true
         return imageView
     }()
     
-    private var nameLabel: UILabel = {
+    private lazy var nameLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
         label.text = "Екатерина Новикова"
@@ -19,7 +22,7 @@ final class ProfileViewController: UIViewController {
         return label
     }()
     
-    private var profileLabel: UILabel  = {
+    private lazy var profileLabel: UILabel  = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
         label.text = "@ekaterina_nov"
@@ -28,7 +31,7 @@ final class ProfileViewController: UIViewController {
         return label
     }()
     
-    private var descriptionLabel: UILabel = {
+    private lazy var descriptionLabel: UILabel = {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
         label.text = "Hello, world!"
@@ -37,18 +40,20 @@ final class ProfileViewController: UIViewController {
         return label
     }()
     
-    private var logoutButton: UIButton = {
+    private lazy var logoutButton: UIButton = {
         let button = UIButton.systemButton(with: UIImage.logout, target: ProfileViewController.self, action: #selector(Self.didTapLogoutButton) )
         button.translatesAutoresizingMaskIntoConstraints = false
         button.tintColor = .red
         return button
     }()
     
-    
+    private let profileService = ProfileService.shared
+    private var profileImageServiceObserver: NSObjectProtocol?
     //MARK: - Override methods
     override func viewDidLoad() {
         super.viewDidLoad()
         setupView()
+        setupObserver()
     }
 
 }
@@ -57,11 +62,25 @@ final class ProfileViewController: UIViewController {
 //MARK: - Private methods
 private extension ProfileViewController {
     
+    func setupObserver(){
+        profileImageServiceObserver = NotificationCenter.default
+                   .addObserver(
+                       forName: ProfileImageService.DidChangeNotification,
+                       object: nil,
+                       queue: .main
+                   ) { [weak self] _ in
+                       guard let self = self else { return }
+                       self.updateAvatar()                                 
+                   }
+    }
+    
     func setupView(){
         
         view.backgroundColor = .ypBlack
+        updateAvatar()
         addViews()
         addConstraints()
+        updateProfileDetails()
     }
     
     func addViews(){
@@ -93,9 +112,25 @@ private extension ProfileViewController {
         ])
     }
     
+    func updateProfileDetails() {
+        if let profile = profileService.profile {
+            nameLabel.text = profile.name
+            profileLabel.text = profile.loginName
+            descriptionLabel.text = profile.bio
+        }
+    }
+    
     
     @objc
     func didTapLogoutButton(){
         
+    }
+    
+    func updateAvatar() {
+        guard
+            let profileImageURL = ProfileImageService.shared.avatarURL,
+            let url = URL(string: profileImageURL)
+        else { return }
+        profileImageView.kf.setImage(with: url)
     }
 }
