@@ -33,3 +33,8 @@ struct UrlsResult: Decodable {
         case thumb
     }
 }
+
+
+struct LikePhotoResult: Decodable {
+    let photo: PhotoResult
+}

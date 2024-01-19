@@ -29,7 +29,6 @@ final class SplashScreenViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        tokenStorage.accessToken = ""
         setupView()
     }
     
@@ -41,7 +40,6 @@ private extension SplashScreenViewController {
     
     func setupView() {
         view.backgroundColor = .ypBlack
-        
         addSubviews()
         activateConstraints()
     }

@@ -1,4 +1,5 @@
 import UIKit
+import Kingfisher
 
 final class ImagesListCell: UITableViewCell {
 
@@ -27,6 +28,8 @@ final class ImagesListCell: UITableViewCell {
         return label
     }()
     
+    weak var delegate: ImagesListCellDelegate? 
+    
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -38,6 +41,20 @@ final class ImagesListCell: UITableViewCell {
         fatalError("init(coder:) has not been implemented")
     }
     
+    override func prepareForReuse() {
+            super.prepareForReuse()
+            imageCell.kf.cancelDownloadTask()
+        }
+    
+    func setIsLiked(_ isLiked: Bool) {
+        if isLiked {
+            likeButton.setImage(UIImage.activeLike, for: .normal)
+        }
+        else {
+            likeButton.setImage(UIImage.noActiveLike, for: .normal)
+        }
+    }
+    
 }
 
 
@@ -46,23 +63,31 @@ private extension ImagesListCell {
         backgroundColor = .clear
         selectionStyle = .none
         
-        addSubview(imageCell)
-        addSubview(likeButton)
-        addSubview(dateLabel)
+        contentView.addSubview(imageCell)
+        contentView.addSubview(likeButton)
+        contentView.addSubview(dateLabel)
+        
+        
+        likeButton.addTarget(self, action: #selector(Self.likeButtonClicked), for: .touchUpInside)
         
         NSLayoutConstraint.activate([
             likeButton.heightAnchor.constraint(equalToConstant: 44),
             likeButton.widthAnchor.constraint(equalToConstant: 44),
-            trailingAnchor.constraint(equalTo: imageCell.trailingAnchor, constant: 16),
-            imageCell.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            bottomAnchor.constraint(equalTo: imageCell.bottomAnchor, constant: 4),
-            imageCell.topAnchor.constraint(equalTo: topAnchor, constant: 4),
+            contentView.trailingAnchor.constraint(equalTo: imageCell.trailingAnchor, constant: 16),
+            imageCell.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            contentView.bottomAnchor.constraint(equalTo: imageCell.bottomAnchor, constant: 4),
+            imageCell.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 4),
             imageCell.trailingAnchor.constraint(equalTo: likeButton.trailingAnchor),
             imageCell.bottomAnchor.constraint(equalTo: dateLabel.bottomAnchor, constant: 8),
-            trailingAnchor.constraint(greaterThanOrEqualTo: dateLabel.trailingAnchor),
+            contentView.trailingAnchor.constraint(greaterThanOrEqualTo: dateLabel.trailingAnchor),
             dateLabel.leadingAnchor.constraint(equalTo: imageCell.leadingAnchor, constant: 8),
-            likeButton.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor),
+            likeButton.leadingAnchor.constraint(greaterThanOrEqualTo: contentView.leadingAnchor),
             likeButton.topAnchor.constraint(equalTo: imageCell.topAnchor)
         ])
+    }
+    
+    @objc
+    func likeButtonClicked() {
+        delegate?.imageListCellDidTapLike(self)
     }
 }
