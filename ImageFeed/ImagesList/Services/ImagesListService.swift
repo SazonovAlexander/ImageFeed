@@ -4,9 +4,6 @@ import Foundation
 final class ImagesListService {
     
     
-    static let shared = ImagesListService()
-    
-    private init(){}
     
     private (set) var photos: [Photo] = []
     static let DidChangeNotification = Notification.Name(rawValue: "ImagesListServiceDidChange")
@@ -48,11 +45,12 @@ final class ImagesListService {
 private extension ImagesListService {
     func imagesListRequest(token: String, page: Int) -> URLRequest {
         var request = URLRequest.makeHTTPRequest(
-            path: "/photos?page=/(page)",
+            path: "/photos?page=\(page)",
             httpMethod: "GET",
             baseURL: DefaultBaseURL
         )
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        
         return request
     }
     
