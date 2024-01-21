@@ -1,15 +1,10 @@
 import UIKit
+import Kingfisher
 
 
 final class SingleImageViewController: UIViewController {
     
-    var image: UIImage = UIImage() {
-        didSet {
-            guard isViewLoaded else { return }
-            imageView.image = image
-            rescaleAndCenterImageInScrollView(image: image)
-        }
-    }
+    var imageUrl: String?
     
     private lazy var sharingButton: UIButton = {
         let button = UIButton()
@@ -50,11 +45,36 @@ final class SingleImageViewController: UIViewController {
 private extension SingleImageViewController {
     
     func setupView() {
-        imageView.image = image
         addSubviews()
         activateConstraints()
         setupScrollView()
         addActions()
+        setImage()
+    }
+    
+    func setImage() {
+        UIBlockingProgressHUD.show()
+        imageView.kf.setImage(with: URL(string: imageUrl ?? "")) { [weak self] result in
+            UIBlockingProgressHUD.dismiss()
+            
+            guard let self = self else { return }
+            switch result {
+            case .success(let imageResult):
+                self.rescaleAndCenterImageInScrollView(image: imageResult.image)
+            case .failure:
+                self.showError()
+            }
+        }
+    }
+    
+    func showError() {
+        let alert = UIAlertController(title: "Что-то пошло не так. Попробовать ещё раз?", message: nil, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Не надо", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Повторить", style: .default, handler: {[weak self] _ in
+            guard let self else { return }
+            self.setImage()
+        }))
+        present(alert, animated: true)
     }
     
     func addSubviews() {
@@ -92,7 +112,6 @@ private extension SingleImageViewController {
     
     func setupScrollView() {
         scrollView.delegate = self
-        rescaleAndCenterImageInScrollView(image: image)
     }
     
     func rescaleAndCenterImageInScrollView(image: UIImage) {
@@ -119,7 +138,7 @@ private extension SingleImageViewController {
     
     @objc
     func didTapShareButton() {
-        let activity = UIActivityViewController(activityItems: [image], applicationActivities: nil)
+        let activity = UIActivityViewController(activityItems: [imageView.image ?? UIImage()], applicationActivities: nil)
         present(activity, animated: true)
     }
 }

@@ -1,5 +1,6 @@
 import UIKit
 import Kingfisher
+import WebKit
 
 
 final class ProfileViewController: UIViewController {
@@ -41,7 +42,8 @@ final class ProfileViewController: UIViewController {
     }()
     
     private lazy var logoutButton: UIButton = {
-        let button = UIButton.systemButton(with: UIImage.logout, target: ProfileViewController.self, action: #selector(Self.didTapLogoutButton) )
+        let button = UIButton()
+        button.setImage(UIImage.logout, for: .normal)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.tintColor = .red
         return button
@@ -81,6 +83,11 @@ private extension ProfileViewController {
         addViews()
         addConstraints()
         updateProfileDetails()
+        addActions()
+    }
+    
+    func addActions() {
+        logoutButton.addTarget(self, action: #selector(Self.didTapLogoutButton), for: .touchUpInside)
     }
     
     func addViews(){
@@ -123,7 +130,32 @@ private extension ProfileViewController {
     
     @objc
     func didTapLogoutButton(){
+        let alert = UIAlertController(title: "Пока, пока!", message: "Уверены что хотите выйти?", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Да", style: .default, handler: {[weak self] _ in
+            guard let self else { return }
+            self.logout()
+        }))
+        alert.addAction(UIAlertAction(title: "Нет", style: .cancel))
+        present(alert, animated: true)
+    }
+    
+    func logout() {
+        OAuth2TokenStorage.shared.accessToken = ""
+        HTTPCookieStorage.shared.removeCookies(since: Date.distantPast)
+        WKWebsiteDataStore.default().fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { records in
+             records.forEach { record in
+                WKWebsiteDataStore.default().removeData(ofTypes: record.dataTypes, for: [record], completionHandler: {})
+             }
+        }
+        switchToSplashScreen()
+    }
+    
+    func switchToSplashScreen() {
+        guard let window = UIApplication.shared.windows.first else { fatalError("Invalid Configuration") }
         
+        let splashScreenController = SplashScreenViewController()
+           
+        window.rootViewController = splashScreenController
     }
     
     func updateAvatar() {

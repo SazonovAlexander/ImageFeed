@@ -47,6 +47,7 @@ final class OAuth2Service {
             lastTask = task
             task.resume()
         }
+    
 }
 
 
