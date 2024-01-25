@@ -27,6 +27,7 @@ final class WebViewViewController: UIViewController & WebViewViewControllerProto
     private lazy var webView: WKWebView = {
         let webView = WKWebView()
         webView.translatesAutoresizingMaskIntoConstraints = false
+        webView.accessibilityIdentifier = "UnsplashWebView"
         return webView
     }()
     
@@ -67,6 +68,13 @@ final class WebViewViewController: UIViewController & WebViewViewControllerProto
         webView.load(request)
     }
     
+    func setProgressValue(_ newValue: Float) {
+        progressView.progress = newValue
+    }
+    
+    func setProgressHidden(_ isHidden: Bool) {
+        progressView.isHidden = isHidden
+    }
 }
 
 
@@ -111,14 +119,6 @@ private extension WebViewViewController {
                     })
     }
     
-    
-    func setProgressValue(_ newValue: Float) {
-        progressView.progress = newValue
-    }
-    
-    func setProgressHidden(_ isHidden: Bool) {
-        progressView.isHidden = isHidden
-    }
     
     func code(from navigationAction: WKNavigationAction) -> String? {
         if

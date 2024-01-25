@@ -1,8 +1,16 @@
 import UIKit
 import Kingfisher
 
-class ImagesListViewController: UIViewController {
 
+public protocol ImagesListViewControllerProtocol: AnyObject {
+    var presenter: ImagesListPresenterProtocol? {get set}
+    func updateTableViewAnimated(newPhotos: [Photo])
+}
+
+
+class ImagesListViewController: UIViewController & ImagesListViewControllerProtocol {
+
+    var presenter: ImagesListPresenterProtocol?
     
     private lazy var tableView: UITableView = {
         let tableView = UITableView()
@@ -20,15 +28,26 @@ class ImagesListViewController: UIViewController {
         return formatter
     }()
     
-    private var listImagesServiceObserver: NSObjectProtocol?
     private var photos: [Photo] = []
-    private let imagesListService = ImagesListService()
     private let placeholder = UIImage(named: "Loader")
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupObserver()
         setup()
+    }
+    
+    func updateTableViewAnimated(newPhotos: [Photo]) {
+        let oldCount = photos.count
+            let newCount = newPhotos.count
+            photos = newPhotos
+            if oldCount != newCount {
+                tableView.performBatchUpdates {
+                    let indexPaths = (oldCount..<newCount).map { i in
+                        IndexPath(row: i, section: 0)
+                    }
+                    tableView.insertRows(at: indexPaths, with: .automatic)
+                } completion: { _ in }
+            }
     }
 }
 
@@ -36,23 +55,11 @@ class ImagesListViewController: UIViewController {
 //MARK: - Private methods
 private extension ImagesListViewController {
     
-    func setupObserver(){
-        listImagesServiceObserver = NotificationCenter.default
-                   .addObserver(
-                       forName: ImagesListService.DidChangeNotification,
-                       object: nil,
-                       queue: .main
-                   ) { [weak self] _ in
-                       guard let self = self else { return }
-                       self.updateTableViewAnimated()
-                   }
-    }
-    
     func setup() {
         addSubviews()
         activateConstraints()
         setupTableView()
-        imagesListService.fetchPhotosNextPage(OAuth2TokenStorage.shared.accessToken, completion: {_ in})
+        presenter?.getPhotos()
     }
     
     func addSubviews() {
@@ -95,28 +102,12 @@ private extension ImagesListViewController {
         let imageInsets = UIEdgeInsets(top: 4, left: 16, bottom: 4, right: 16)
         let cellHeight = placeholder?.size.height ?? 100  + imageInsets.top + imageInsets.bottom
         cell.frame.size.height = cellHeight
-        if  photos[indexPath.row].isLiked {
-            cell.likeButton.setImage(UIImage.activeLike, for: .normal)
-        }
-        else {
-            cell.likeButton.setImage(UIImage.noActiveLike, for: .normal)
-        }
+        cell.setIsLiked(photos[indexPath.row].isLiked)
         cell.delegate = self
+        
     }
     
-    func updateTableViewAnimated() {
-        let oldCount = photos.count
-            let newCount = imagesListService.photos.count
-            photos = imagesListService.photos
-            if oldCount != newCount {
-                tableView.performBatchUpdates {
-                    let indexPaths = (oldCount..<newCount).map { i in
-                        IndexPath(row: i, section: 0)
-                    }
-                    tableView.insertRows(at: indexPaths, with: .automatic)
-                } completion: { _ in }
-            }
-    }
+    
 }
 
 //MARK: - UITableViewDelegate
@@ -128,7 +119,7 @@ extension ImagesListViewController: UITableViewDelegate {
       forRowAt indexPath: IndexPath
     ) {
         if indexPath.row == photos.count - 1 {
-            imagesListService.fetchPhotosNextPage(OAuth2TokenStorage.shared.accessToken, completion: {_ in})
+            presenter?.getPhotos()
         }
     }
     
@@ -179,22 +170,20 @@ extension ImagesListViewController: ImagesListCellDelegate {
     func imageListCellDidTapLike(_ cell: ImagesListCell) {
         guard let indexPath = tableView.indexPath(for: cell) else { return }
         let photo = photos[indexPath.row]
-        UIBlockingProgressHUD.show()
-        imagesListService.changeLike(OAuth2TokenStorage.shared.accessToken, photoId: photo.id, isLike: photo.isLiked, {[weak self] result in
+        presenter?.likePhoto(photo) { [weak self] in
             guard let self else { return }
-            switch result {
-            case .success(_):
-                self.photos = self.imagesListService.photos
-                DispatchQueue.main.async {
-                    cell.setIsLiked(!photo.isLiked)
-                    self.tableView.reloadRows(at: [indexPath], with: .automatic)
-                }
-                UIBlockingProgressHUD.dismiss()
-            case .failure(let error):
-                print(error)
-                UIBlockingProgressHUD.dismiss()
+            photos[indexPath.row] = Photo(id: photo.id,
+                                          size: photo.size,
+                                          createdAt: photo.createdAt, 
+                                          welcomeDescription: photo.welcomeDescription,
+                                          thumbImageURL: photo.thumbImageURL,
+                                          largeImageURL: photo.largeImageURL,
+                                          isLiked: !photo.isLiked)
+            DispatchQueue.main.async {
+                cell.setIsLiked(!photo.isLiked)
+                self.tableView.reloadRows(at: [indexPath], with: .automatic)
             }
-        })
+        }
     }
     
     

@@ -29,8 +29,10 @@ private extension TabBarController {
     }
     
     func setupViewControllers() {
-            
+        let imagesListPresenter = ImagesListPresenter()
         let imagesListViewController = ImagesListViewController()
+        imagesListPresenter.view = imagesListViewController
+        imagesListViewController.presenter = imagesListPresenter
         imagesListViewController.tabBarItem = UITabBarItem(
             title: "",
             image: UIImage(named: "TabEditorialActive"),
@@ -39,6 +41,9 @@ private extension TabBarController {
         
             
         let profileViewController = ProfileViewController()
+        let profilePresenter = ProfilePresenter(logoutHelper: LogoutHelper())
+        profilePresenter.view = profileViewController
+        profileViewController.presenter = profilePresenter
         profileViewController.tabBarItem = UITabBarItem(
             title: "",
             image: UIImage(named: "TabProfileActive"),

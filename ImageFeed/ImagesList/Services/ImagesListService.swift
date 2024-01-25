@@ -3,8 +3,6 @@ import Foundation
 
 final class ImagesListService {
     
-    
-    
     private (set) var photos: [Photo] = []
     static let DidChangeNotification = Notification.Name(rawValue: "ImagesListServiceDidChange")
     private var lastLoadedPage: Int?
