@@ -22,6 +22,7 @@ final class ProfileService {
                 self.profile = profile
                 completion(.success(profile))
             case .failure(let error):
+                print(error)
                 completion(.failure(error))
             }
         })

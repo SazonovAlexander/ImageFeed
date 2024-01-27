@@ -10,7 +10,7 @@ public struct Profile {
     
     init(result: ProfileResult) {
         self.username = result.username
-        self.name = "\(result.firstName) \(result.lastName)"
+        self.name = "\(result.firstName ?? "") \(result.lastName ?? "")"
         self.loginName = "@\(result.username)"
         self.bio = result.bio
     }
