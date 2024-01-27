@@ -1,9 +1,16 @@
 import UIKit
 import Kingfisher
-import WebKit
 
 
-final class ProfileViewController: UIViewController {
+public protocol ProfileViewControllerProtocol: AnyObject {
+    var presenter: ProfilePresenterProtocol? { get set }
+    func updateProfileDetails(_ profile: Profile)
+    func updateAvatar(url: URL)
+}
+
+final class ProfileViewController: UIViewController & ProfileViewControllerProtocol {
+    
+    var presenter: ProfilePresenterProtocol?
     
     //MARK: - Private properties
     private lazy var profileImageView: UIImageView = {
@@ -20,6 +27,7 @@ final class ProfileViewController: UIViewController {
         label.text = "Екатерина Новикова"
         label.font = UIFont.boldSystemFont(ofSize: 23)
         label.textColor = .white
+        label.accessibilityIdentifier = "Name Lastname"
         return label
     }()
     
@@ -29,6 +37,7 @@ final class ProfileViewController: UIViewController {
         label.text = "@ekaterina_nov"
         label.font = UIFont.systemFont(ofSize: 13)
         label.textColor = .gray
+        label.accessibilityIdentifier = "@username"
         return label
     }()
     
@@ -46,16 +55,24 @@ final class ProfileViewController: UIViewController {
         button.setImage(UIImage.logout, for: .normal)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.tintColor = .red
+        button.accessibilityIdentifier = "logout button"
         return button
     }()
     
-    private let profileService = ProfileService.shared
-    private var profileImageServiceObserver: NSObjectProtocol?
     //MARK: - Override methods
     override func viewDidLoad() {
         super.viewDidLoad()
         setupView()
-        setupObserver()
+    }
+    
+    func updateProfileDetails(_ profile: Profile) {
+        nameLabel.text = profile.name
+        profileLabel.text = profile.loginName
+        descriptionLabel.text = profile.bio
+    }
+    
+    func updateAvatar(url: URL) {
+        profileImageView.kf.setImage(with: url)
     }
 
 }
@@ -64,25 +81,14 @@ final class ProfileViewController: UIViewController {
 //MARK: - Private methods
 private extension ProfileViewController {
     
-    func setupObserver(){
-        profileImageServiceObserver = NotificationCenter.default
-                   .addObserver(
-                       forName: ProfileImageService.DidChangeNotification,
-                       object: nil,
-                       queue: .main
-                   ) { [weak self] _ in
-                       guard let self = self else { return }
-                       self.updateAvatar()                                 
-                   }
-    }
     
     func setupView(){
         
         view.backgroundColor = .ypBlack
-        updateAvatar()
+        presenter?.updateAvatar()
         addViews()
         addConstraints()
-        updateProfileDetails()
+        presenter?.updateProfileDetails()
         addActions()
     }
     
@@ -119,50 +125,20 @@ private extension ProfileViewController {
         ])
     }
     
-    func updateProfileDetails() {
-        if let profile = profileService.profile {
-            nameLabel.text = profile.name
-            profileLabel.text = profile.loginName
-            descriptionLabel.text = profile.bio
-        }
-    }
     
     
     @objc
     func didTapLogoutButton(){
         let alert = UIAlertController(title: "Пока, пока!", message: "Уверены что хотите выйти?", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Да", style: .default, handler: {[weak self] _ in
+        let action = UIAlertAction(title: "Да", style: .default, handler: {[weak self] _ in
             guard let self else { return }
-            self.logout()
-        }))
+            self.presenter?.logout()
+        })
+        action.accessibilityIdentifier = "Yes"
+        alert.addAction(action)
         alert.addAction(UIAlertAction(title: "Нет", style: .cancel))
+        alert.view.accessibilityIdentifier = "Bye bye!"
         present(alert, animated: true)
     }
     
-    func logout() {
-        OAuth2TokenStorage.shared.accessToken = ""
-        HTTPCookieStorage.shared.removeCookies(since: Date.distantPast)
-        WKWebsiteDataStore.default().fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { records in
-             records.forEach { record in
-                WKWebsiteDataStore.default().removeData(ofTypes: record.dataTypes, for: [record], completionHandler: {})
-             }
-        }
-        switchToSplashScreen()
-    }
-    
-    func switchToSplashScreen() {
-        guard let window = UIApplication.shared.windows.first else { fatalError("Invalid Configuration") }
-        
-        let splashScreenController = SplashScreenViewController()
-           
-        window.rootViewController = splashScreenController
-    }
-    
-    func updateAvatar() {
-        guard
-            let profileImageURL = ProfileImageService.shared.avatarURL,
-            let url = URL(string: profileImageURL)
-        else { return }
-        profileImageView.kf.setImage(with: url)
-    }
 }
